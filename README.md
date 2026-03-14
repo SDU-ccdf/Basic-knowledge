@@ -7,7 +7,7 @@ content：
 
 (包括不限于以下内容)
 
-##1. linux基础学习##
+1. linux基础学习
 
 2. Conda、Cuda、Cudnn环境搭建
 
