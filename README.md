@@ -3,7 +3,7 @@ Personal basic study notes
 
 content：
 
-基础知识+自我补充
+基础知识+自我补充理解
 
 (包括不限于以下内容)
 
