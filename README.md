@@ -3,6 +3,9 @@ Basic study notes
 
 content：
 
+基础知识+自我补充
+
+(包括不限于以下内容)
 
 1. linux基础学习
 
