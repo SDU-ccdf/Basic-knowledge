@@ -324,3 +324,102 @@ print('DeepSpeed版本:', deepspeed.__version__)
 结果输出:
 
 ![](images/3.png)
+
+
+##### 最后我们用一段TinyLlama-1.1B轻量级监督微调代码结束本次环境搭建
+
+```python
+# finetune_tinyllama.py
+
+from unsloth import FastLanguageModel
+import torch
+from transformers import TrainingArguments
+from trl import SFTTrainer
+from datasets import load_dataset
+
+# 1. 加载 tinyllama 模型（4bit）
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name="unsloth/tinyllama",        # 1.1B 模型
+    max_seq_length=512,                    # 限制序列长度，节省显存
+    dtype=None,                            # 自动选择精度
+    load_in_4bit=True,
+)
+
+# 可选：禁用 fused loss（如果遇到损失函数相关错误可以启用）
+# model.config.use_fused_loss = False
+
+# 2. 添加 LoRA 适配器（使用较小的 rank 以节省显存，本人笔记本只有4GB显存）
+model = FastLanguageModel.get_peft_model(
+    model,
+    r=8,                                    # 减小 rank 以节省显存
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+    lora_alpha=8,
+    lora_dropout=0,
+    bias="none",
+    use_gradient_checkpointing="unsloth",   # 重要：减少显存占用
+    random_state=42,
+)
+
+# 3. 加载数据集（使用 alpaca 前 200 条快速实验）
+dataset = load_dataset("yahma/alpaca-cleaned", split="train[:200]")
+
+def tokenize_function(example):
+    # 将 instruction 和 output 拼接成训练文本
+    text = f"### Instruction:\n{example['instruction']}\n\n### Response:\n{example['output']}"
+    # 使用 tokenizer 编码，并截断到 max_seq_length
+    tokenized = tokenizer(
+        text,
+        truncation=True,
+        max_length=512,
+        padding=False,           # 不填充，后续由 DataCollator 处理
+        return_tensors=None,     # 返回 Python list
+    )
+    # 对于语言建模，标签与输入相同（自回归）
+    tokenized["labels"] = tokenized["input_ids"].copy()
+    return tokenized
+
+# 对数据集应用 tokenize 函数，并移除原始列（可选）
+tokenized_dataset = dataset.map(
+    tokenize_function,
+    remove_columns=dataset.column_names,   # 移除原始文本列，只保留 input_ids, attention_mask, labels
+)
+
+# 4. 训练参数设置
+training_args = TrainingArguments(
+    output_dir="./tinyllama_output",
+    per_device_train_batch_size=1,          # 关键：每卡 batch=1
+    gradient_accumulation_steps=4,           # 累积 4 步，相当于总 batch=4
+    num_train_epochs=1,
+    learning_rate=2e-4,
+    fp16=False,                              # 关闭 float16
+    bf16=True,                                # 启用 bfloat16（显卡需支持）
+    logging_steps=10,
+    save_strategy="no",
+    remove_unused_columns=False,              # 保留所有列，但我们已经移除了不需要的列
+)
+
+# 5. 创建 Trainer
+# 注意：因为我们提供了已经 tokenized 的数据集，所以设置 dataset_text_field=None
+trainer = SFTTrainer(
+    model=model,
+    tokenizer=tokenizer,
+    train_dataset=tokenized_dataset,
+    args=training_args,
+    dataset_text_field=None,                  # 重要：告诉 Trainer 数据已经 tokenized
+    max_seq_length=512,
+)
+
+# 6. 开始训练
+trainer.train()
+
+# 7. 保存 LoRA 权重
+model.save_pretrained("./tinyllama_lora")
+
+
+```
+
+
+结果展示：
+![](images/4.png)
+
+
