@@ -183,6 +183,8 @@ ninja --version && echo $?   # 应该返回 0
    这是注意力机制加速器。可以让大模型训练速度翻倍、显存占用减半。
 
 
+方法一：
+
 ```
 # pip安装(会自动从源码编译，依赖上面装的 ninja)
 
@@ -192,10 +194,68 @@ pip install flash-attn --no-build-isolation
 
 MAX_JOBS=2 pip install flash-attn --no-build-isolation
 
+# 下面这个命令是极限的,如果还是在运行时候遇到终端说明你的内存确实无法支撑编译任务只能选择去安装预编译包。
+
+MAX_JOBS=1 pip install flash-attn --no-build-isolation
+
 #安装后验证
 
 python -c "from flash_attn import flash_attn_func; print('Flash Attention 导入成功')"
+
+
 ```
+
+
+
+方法二(内存不够)：
+
+下载别人已经编译好的,适用自己环境的flash-attn包。
+
+
+先把刚才下载的部分缓存移除：
+```
+pip cache purge
+```
+
+然后打印自己环境的各组件版本：
+
+```
+python -c "import torch; print(f'PyTorch版本: {torch.__version__}'); print(f'Python版本: 3.{__import__(\"sys\").version_info.minor}')"
+```
+
+之后知道自己cuda,python,pytorch版本之后就去访问https://github.com/mjun0812/flash-attention-prebuild-wheels/releases
+寻找与自己版本对应的包。
+
+tips：注意自己linux版本要对应可以用如下命令查询自己版本：
+
+```
+uname -m
+```
+
+找到对应包后下载到本地然后利用Windows的磁盘挂载在/mnt/下这一特性直接把文件复制到Ubuntu系统即可:
+
+
+```
+cp /mnt/e/download/flash_attn-2.8.3+cu128torch2.10-cp311-cp311-linux_x86_64.whl .
+
+```
+
+
+然后就直接安装即可：
+
+```
+pip install flash_attn-2.8.3+cu128torch2.10-cp311-cp311-linux_x86_64.whl
+
+# 测试是否成功:
+
+python -c "from flash_attn import flash_attn_func; print('Flash Attention 导入成功')"
+```
+
+
+
+
+
+
 
 
 3. 安装Unsloth
@@ -204,7 +264,6 @@ python -c "from flash_attn import flash_attn_func; print('Flash Attention 导入
 
 ```
 pip install unsloth
-
 ```
 
 有一点值得注意在使用时要在Python脚本开头先导入Unsloth，再导入其他库！
