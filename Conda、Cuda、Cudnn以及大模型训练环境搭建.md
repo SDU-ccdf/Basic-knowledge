@@ -419,7 +419,9 @@ model.save_pretrained("./tinyllama_lora")
 ```
 
 
+
+
 结果展示：
 ![](images/4.png)
 
-
+可以看到环境搭建非常成功。
