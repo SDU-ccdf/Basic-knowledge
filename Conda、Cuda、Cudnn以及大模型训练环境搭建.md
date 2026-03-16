@@ -277,6 +277,11 @@ pip install unsloth
 
 ```
 pip install transformers datasets accelerate evaluate tensorboard
+
+## 注意需添加Hugging Face国内镜像
+echo 'export HF_ENDPOINT=https://hf-mirror.com' >> ~/.bashrc
+source ~/.bashrc
+
 ```
 
 
