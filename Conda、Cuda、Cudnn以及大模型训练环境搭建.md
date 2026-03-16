@@ -291,3 +291,31 @@ pip install transformers datasets accelerate evaluate tensorboard
 pip install deepspeed
 ```
 
+
+
+最后进行一个全面检查就算搭建成功了！
+
+```
+python -c "
+import torch
+import flash_attn
+import unsloth
+import transformers
+import datasets
+import accelerate
+import deepspeed
+
+print('PyTorch版本:', torch.__version__)
+print('CUDA可用:', torch.cuda.is_available())
+print('Flash Attention版本:', flash_attn.__version__)
+print('Unsloth导入成功')
+print('Transformers版本:', transformers.__version__)
+print('Datasets版本:', datasets.__version__)
+print('Accelerate版本:', accelerate.__version__)
+print('DeepSpeed版本:', deepspeed.__version__)
+"
+```
+
+结果输出:
+
+![](images/3.png)
